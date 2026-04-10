@@ -1,343 +1,917 @@
-import { useState } from "react";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIET7103 Workshop 8 — Lifespan Nutrition & Cognitive Counselling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-async function callClaude(userMessage, systemPrompt) {
-  try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userMessage }]
-      })
+  :root {
+    --uq-purple: #51247A;
+    --uq-purple-dark: #3E1563;
+    --uq-purple-mid: #6B3FA0;
+    --uq-purple-light: #EDE0F7;
+    --uq-purple-pale: #F7F2FC;
+    --uq-magenta: #962A8B;
+    --uq-teal: #00A2C7;
+    --uq-teal-light: #E0F5FA;
+    --uq-gold: #BB9D65;
+    --text-primary: #1A1A1A;
+    --text-secondary: #4A4A4A;
+    --text-muted: #767676;
+    --border: #D4C3E8;
+    --border-light: #EDE0F7;
+    --white: #FFFFFF;
+    --surface: #FAF8FC;
+    --shadow: 0 2px 8px rgba(81,36,122,0.10);
+  }
+
+  body {
+    font-family: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text-primary);
+    background: var(--surface);
+    min-height: 100vh;
+  }
+
+  /* ---- Header ---- */
+  .site-header {
+    background: var(--uq-purple);
+    color: white;
+    padding: 0;
+    border-bottom: 4px solid var(--uq-gold);
+  }
+  .header-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 24px 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .uq-logo {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  .uq-logo-box {
+    width: 44px;
+    height: 44px;
+    background: white;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--uq-purple);
+    letter-spacing: -0.5px;
+    flex-shrink: 0;
+  }
+  .header-text { flex: 1; }
+  .header-eyebrow {
+    font-size: 12px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .header-title {
+    font-size: 22px;
+    font-weight: 500;
+    color: white;
+    line-height: 1.25;
+    margin-bottom: 4px;
+  }
+  .header-subtitle {
+    font-size: 14px;
+    color: rgba(255,255,255,0.75);
+    font-weight: 300;
+  }
+
+  /* ---- Tab Nav ---- */
+  .tab-nav {
+    background: var(--uq-purple-dark);
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+  }
+  .tab-nav-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    padding: 0 24px;
+  }
+  .tab-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.65);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 400;
+    padding: 13px 18px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: rgba(255,255,255,0.9); }
+  .tab-btn.active {
+    color: white;
+    font-weight: 500;
+    border-bottom-color: var(--uq-gold);
+  }
+
+  /* ---- Main Content ---- */
+  .main { max-width: 900px; margin: 0 auto; padding: 32px 24px 60px; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .panel-intro {
+    font-size: 15px;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+    line-height: 1.7;
+    max-width: 680px;
+    border-left: 3px solid var(--uq-gold);
+    padding-left: 14px;
+  }
+
+  /* ---- Expand Cards ---- */
+  .expand-card {
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: white;
+    margin-bottom: 10px;
+    overflow: hidden;
+    transition: box-shadow 0.18s, border-color 0.18s;
+  }
+  .expand-card:hover { box-shadow: var(--shadow); }
+  .expand-card.open { border-color: var(--uq-purple-mid); box-shadow: var(--shadow); }
+
+  .expand-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 20px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    gap: 12px;
+  }
+  .expand-trigger-left { display: flex; align-items: center; gap: 12px; }
+  .expand-label {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+  .expand-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-left: 2px;
+  }
+  .expand-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 20px;
+    background: var(--uq-purple-light);
+    color: var(--uq-purple);
+    white-space: nowrap;
+  }
+  .expand-icon {
+    font-size: 22px;
+    font-weight: 300;
+    color: var(--uq-purple);
+    flex-shrink: 0;
+    line-height: 1;
+    transition: transform 0.2s;
+  }
+  .expand-card.open .expand-icon { transform: rotate(45deg); }
+
+  .expand-body {
+    display: none;
+    padding: 4px 20px 20px;
+    border-top: 1px solid var(--border-light);
+  }
+  .expand-card.open .expand-body { display: block; }
+
+  .expand-item { margin-bottom: 16px; }
+  .expand-item:last-child { margin-bottom: 0; }
+  .expand-item-heading {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--uq-purple);
+    margin-bottom: 4px;
+    margin-top: 14px;
+  }
+  .expand-item-body {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  /* ---- Life stage colour accents ---- */
+  .card-pre .expand-badge { background: #E0F5FA; color: #006080; }
+  .card-pre.open { border-color: var(--uq-teal); }
+  .card-pre .expand-item-heading { color: var(--uq-teal); }
+
+  .card-mid .expand-badge { background: #FFF0E0; color: #8B4000; }
+  .card-mid.open { border-color: #C85000; }
+  .card-mid .expand-item-heading { color: #C85000; }
+
+  .card-adol .expand-badge { background: var(--uq-purple-light); color: var(--uq-purple); }
+  .card-adol.open { border-color: var(--uq-purple); }
+  .card-adol .expand-item-heading { color: var(--uq-purple); }
+
+  .card-older .expand-badge { background: #E0EBF7; color: #1A3A60; }
+  .card-older.open { border-color: #1A5276; }
+  .card-older .expand-item-heading { color: #1A5276; }
+
+  /* CBT colour accents */
+  .card-abc.open { border-color: #B03030; }
+  .card-abc .expand-item-heading { color: #B03030; }
+  .card-abc .expand-badge { background: #FDECEA; color: #7F1D1D; }
+
+  .card-dist.open { border-color: #1565C0; }
+  .card-dist .expand-item-heading { color: #1565C0; }
+  .card-dist .expand-badge { background: #E3F0FD; color: #1A3A60; }
+
+  .card-rrr.open { border-color: #276744; }
+  .card-rrr .expand-item-heading { color: #276744; }
+  .card-rrr .expand-badge { background: #E6F5EC; color: #1A4A2E; }
+
+  .card-stopp.open { border-color: #8B6000; }
+  .card-stopp .expand-item-heading { color: #8B6000; }
+  .card-stopp .expand-badge { background: #FFF4D6; color: #6B4400; }
+
+  /* ---- Case Studies ---- */
+  .case-card {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 24px;
+    margin-bottom: 20px;
+  }
+  .case-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .case-tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .case-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+  .case-scenario {
+    background: var(--uq-purple-pale);
+    border-left: 3px solid var(--uq-purple-mid);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 18px;
+  }
+  .case-question {
+    margin-bottom: 14px;
+  }
+  .case-question label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--uq-purple);
+    margin-bottom: 6px;
+  }
+  .case-question textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px 12px;
+    border-radius: 7px;
+    border: 1.5px solid var(--border);
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    background: var(--surface);
+    resize: vertical;
+    transition: border-color 0.18s;
+  }
+  .case-question textarea:focus {
+    outline: none;
+    border-color: var(--uq-purple-mid);
+    background: white;
+  }
+  .reveal-btn {
+    background: var(--uq-purple);
+    color: white;
+    border: none;
+    border-radius: 7px;
+    padding: 10px 22px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: background 0.18s;
+  }
+  .reveal-btn:hover { background: var(--uq-purple-dark); }
+
+  .model-answer {
+    display: none;
+    margin-top: 16px;
+    background: #F0FAF5;
+    border: 1px solid #86EFAC;
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .model-answer.visible { display: block; }
+  .model-answer-heading {
+    font-size: 13px;
+    font-weight: 600;
+    color: #166534;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .model-answer-section { margin-bottom: 14px; }
+  .model-answer-section:last-child { margin-bottom: 0; }
+  .model-answer-section h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #15803D;
+    margin-bottom: 4px;
+  }
+  .model-answer-section p {
+    font-size: 14px;
+    color: #1A2E1A;
+    line-height: 1.7;
+  }
+
+  /* ---- Footer ---- */
+  .site-footer {
+    background: var(--uq-purple-dark);
+    color: rgba(255,255,255,0.6);
+    text-align: center;
+    font-size: 12px;
+    padding: 20px 24px;
+  }
+  .site-footer a { color: rgba(255,255,255,0.75); }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 600px) {
+    .header-inner { padding: 18px 16px; }
+    .main { padding: 20px 16px 40px; }
+    .tab-btn { padding: 12px 12px; font-size: 13px; }
+    .case-card { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="uq-logo">
+      <div class="uq-logo-box">UQ</div>
+    </div>
+    <div class="header-text">
+      <div class="header-eyebrow">The University of Queensland &nbsp;·&nbsp; DIET7103</div>
+      <h1 class="header-title">Lifespan interviewing &amp; counselling</h1>
+      <div class="header-subtitle">Workshop 8 extended learning materials — Dr Olivia Wright PhD AdvAPD</div>
+    </div>
+  </div>
+</header>
+
+<!-- TAB NAV -->
+<nav class="tab-nav">
+  <div class="tab-nav-inner">
+    <button class="tab-btn active" onclick="switchTab(0)">Lifespan nutrition</button>
+    <button class="tab-btn" onclick="switchTab(1)">Cognitions &amp; CBT</button>
+    <button class="tab-btn" onclick="switchTab(2)">Case studies</button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- TAB 0: LIFESPAN -->
+  <section class="tab-panel active" id="panel-0">
+    <p class="panel-intro">Expand each life stage for extended clinical notes, evidence-based context, and practical counselling strategies to supplement the workshop slides.</p>
+
+    <!-- Pre-school -->
+    <div class="expand-card card-pre" id="card-pre">
+      <button class="expand-trigger" onclick="toggleCard('card-pre')">
+        <div class="expand-trigger-left">
+          <span class="expand-label">Age 2–5 years</span>
+          <span class="expand-sub">Pre-school</span>
+          <span class="expand-badge">p.218 text</span>
+        </div>
+        <span class="expand-icon">+</span>
+      </button>
+      <div class="expand-body">
+        <div class="expand-item">
+          <div class="expand-item-heading">Iron, zinc &amp; calcium — the priority nutrients</div>
+          <div class="expand-item-body">These three nutrients are critical during the pre-school years. Iron deficiency anaemia remains prevalent and impairs cognitive development — always assess red meat, legumes, fortified cereals, and vitamin C intake (which enhances non-haem iron absorption). Calcium needs are 700 mg/day (age 1–3) and 1000 mg/day (age 4–8). Watch for excessive milk intake displacing iron-rich foods — a common clinical presentation.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Food neophobia is developmentally normal</div>
+          <div class="expand-item-body">Food neophobia (fear of new foods) peaks between ages 2–6. Research demonstrates that 8–15 exposures may be required before acceptance — parents often give up after 3–4 attempts. Validate parental frustration, then reframe: repeated, low-pressure exposure in a calm setting is evidence-based. Tasting without any obligation to swallow is a valid and valuable step.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Satter's Division of Responsibility</div>
+          <div class="expand-item-body">A cornerstone of paediatric nutrition counselling. Parents are responsible for WHAT food is offered, WHEN, and WHERE. Children are responsible for WHETHER they eat and HOW MUCH. This model reduces mealtime coercion, which is associated with poorer long-term food relationships, fussiness, and both under- and over-eating in later childhood.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Sensory vs nutrient language</div>
+          <div class="expand-item-body">Pre-schoolers classify food by colour, shape, and texture — not nutrients. Use sensory language ("this is crunchy like crackers — want to try?") rather than health framing ("this has lots of vitamins"). Engage their exploratory nature: touching, smelling, and helping prepare food all count as meaningful steps toward eventual acceptance.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Screen time, media &amp; eating behaviour</div>
+          <div class="expand-item-body">Distracted eating during screen use impairs satiety cue recognition — children eat beyond fullness without noticing. Australian guidelines recommend no screens during meals and a maximum of 1 hour/day of screen time in this age group. Media exposure to food advertising begins shaping food preferences from as early as age 2.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Middle childhood -->
+    <div class="expand-card card-mid" id="card-mid">
+      <button class="expand-trigger" onclick="toggleCard('card-mid')">
+        <div class="expand-trigger-left">
+          <span class="expand-label">Age 6–12 years</span>
+          <span class="expand-sub">Middle childhood</span>
+          <span class="expand-badge">p.219 text</span>
+        </div>
+        <span class="expand-icon">+</span>
+      </button>
+      <div class="expand-body">
+        <div class="expand-item">
+          <div class="expand-item-heading">The school food environment</div>
+          <div class="expand-item-body">Children make increasingly independent food choices at school. Canteen access, packed lunch contents, and peer eating norms all shape intake significantly. Broaden your assessment beyond the home environment — ask specifically about school lunches, tuck shop habits, and what friends eat. Consider the school food policy as a systems-level lever in population interventions.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Family meals as a protective factor</div>
+          <div class="expand-item-body">Strong epidemiological evidence links regular family meals (even 3x/week) with healthier dietary quality, lower obesity risk, and reduced risk of disordered eating. Family meals provide structure, behavioural modelling, and social connection — all of which influence eating behaviour. This is one of the most impactful single recommendations for this age group.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Weight-sensitive language is essential</div>
+          <div class="expand-item-body">This age group is highly susceptible to weight stigma and the early formation of disordered eating patterns. Always focus on energy for sport, mood, concentration, skin health, and immune function — never on weight or body size. The "healthy weight" discourse in school settings requires careful, evidence-informed navigation to avoid unintended harm.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Food advertising &amp; media literacy</div>
+          <div class="expand-item-body">Children aged 6–12 are exposed to approximately 10–15 food advertisements daily, predominantly for discretionary foods. Incorporating media literacy into nutrition education builds critical thinking skills about food marketing. This empowers children to evaluate food claims independently — a skill with lifelong protective value.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Action-based engagement works best</div>
+          <div class="expand-item-body">Abstract nutritional concepts do not resonate well at this developmental stage. Hands-on cooking, school food gardens, food photography diaries, and interactive apps are significantly more effective than verbal or written nutrition education. When children grow, prepare, or photograph food they are more likely to try and enjoy it.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Adolescence -->
+    <div class="expand-card card-adol" id="card-adol">
+      <button class="expand-trigger" onclick="toggleCard('card-adol')">
+        <div class="expand-trigger-left">
+          <span class="expand-label">Age 13–19 years</span>
+          <span class="expand-sub">Adolescence</span>
+        </div>
+        <span class="expand-icon">+</span>
+      </button>
+      <div class="expand-body">
+        <div class="expand-item">
+          <div class="expand-item-heading">Peak nutrient demands — frame them strategically</div>
+          <div class="expand-item-body">Adolescence represents a lifetime peak for iron (particularly females post-menarche), calcium (bone mineralisation phase), and zinc. Despite these high requirements, dietary quality often declines during this period due to increased autonomy and exposure to fast food and processed snacks. Frame nutrients through what adolescents care about: iron → energy and sport performance; calcium → bone strength and injury prevention; zinc → skin health.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Body image — the clinical imperative</div>
+          <div class="expand-item-body">Adolescence is the highest-risk developmental period for the onset of eating disorders. Any weight- or body-related conversation must be handled with extreme care. The Health at Every Size® (HAES) framework and weight-neutral counselling language are strongly recommended. Never comment on weight or body shape unprompted. Always assess for disordered eating risk before initiating any dietary intervention.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Motivational Interviewing is essential here</div>
+          <div class="expand-item-body">Adolescents are developmentally primed to resist adult direction — this is healthy identity formation, not obstruction. MI is particularly powerful because it respects autonomy. Ask permission before giving information. Use reflective listening. Help them identify the discrepancy between current behaviour and their own values (sport performance, friendship, feeling good) — never yours or their parents' values.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Social media &amp; diet culture</div>
+          <div class="expand-item-body">TikTok, Instagram, and YouTube expose adolescents to intermittent fasting, "clean eating," detox diets, and extreme physiques daily. Don't dismiss this — acknowledge it directly and with genuine curiosity. Build critical evaluation skills alongside nutrition knowledge. Connecting evidence-based information to their existing media landscape is far more effective than ignoring it.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Tailor approach to sub-stage</div>
+          <div class="expand-item-body">Early adolescence (12–14): family-focused approaches, clear and concrete messages, educational materials. Mid-adolescence (15–17): leverage emerging abstract thinking for pros/cons analysis, problem-solving, and decision-making frameworks. Late adolescence (18–19): increasing complexity, life transitions, building independent food skills — cooking, budgeting, label reading, navigating food environments independently.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Older adults -->
+    <div class="expand-card card-older" id="card-older">
+      <button class="expand-trigger" onclick="toggleCard('card-older')">
+        <div class="expand-trigger-left">
+          <span class="expand-label">Age 65+</span>
+          <span class="expand-sub">Older adults</span>
+        </div>
+        <span class="expand-icon">+</span>
+      </button>
+      <div class="expand-body">
+        <div class="expand-item">
+          <div class="expand-item-heading">Sarcopenia &amp; protein — increased needs, different targets</div>
+          <div class="expand-item-body">Muscle loss (sarcopenia) accelerates after age 65. Protein requirements increase to 1.0–1.2 g/kg/day — higher than the 0.8 g/kg recommended for younger adults. Critically, protein distribution across meals matters more than total intake: spreading protein across 3–4 meals (each providing 25–30 g) is more anabolic than a single large serve. Leucine-rich foods (meat, fish, eggs, dairy, legumes) are particularly important for muscle protein synthesis.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Polypharmacy-nutrition interactions</div>
+          <div class="expand-item-body">Many common medications directly affect nutritional status. Key interactions: metformin depletes vitamin B12; diuretics deplete potassium and magnesium; warfarin interacts with vitamin K foods; proton pump inhibitors impair iron and B12 absorption; corticosteroids increase calcium excretion; many antibiotics affect gut microbiome and vitamin K production. Always take a comprehensive medication history and consider nutrient-drug interactions as part of nutritional assessment.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Sensory changes affecting intake</div>
+          <div class="expand-item-body">Taste (particularly salty and sweet) and smell decline with age, making food less appealing and reducing appetite. Zinc deficiency — common in older adults — worsens taste perception. Address this by enhancing flavour through herbs, spices, umami-rich foods (cheese, tomato, mushrooms), and meal variety. Always assess dentition — poor oral health significantly restricts food choices and nutritional adequacy and warrants dental referral.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Social isolation as a nutrition risk factor</div>
+          <div class="expand-item-body">The health impact of social isolation is comparable to smoking 15 cigarettes per day. Eating alone is strongly associated with reduced appetite, reduced meal quality, and lower overall dietary diversity. Social prescription — connecting clients with community dining programmes, meals-on-wheels, lunch clubs, or other social groups — can be as clinically impactful as any dietary change, and should be considered a core intervention component.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Person-centred practice — food is identity</div>
+          <div class="expand-item-body">Older adults bring decades of food culture, identity, and memory to the consultation. Always begin with their food story — what meals meant to them, who they cooked for, what they used to enjoy. Build recommendations onto existing preferences, routines, and capabilities. Practical barriers (transport, cooking capacity, income, cognitive decline, physical limitations) often require addressing before dietary quality can meaningfully improve. Don't skip to dietary advice before understanding the full context.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 1: COGNITIONS & CBT -->
+  <section class="tab-panel" id="panel-1">
+    <p class="panel-intro">Expand each topic for deeper coverage of CBT principles and their application in nutrition and lifestyle counselling, supplementing the cognitive aspects of Workshop 8.</p>
+
+    <!-- ABC model -->
+    <div class="expand-card card-abc" id="card-abc">
+      <button class="expand-trigger" onclick="toggleCard('card-abc')">
+        <div class="expand-trigger-left">
+          <span class="expand-label">The ABC model</span>
+          <span class="expand-badge">Core framework</span>
+        </div>
+        <span class="expand-icon">+</span>
+      </button>
+      <div class="expand-body">
+        <div class="expand-item">
+          <div class="expand-item-heading">A — Activating event</div>
+          <div class="expand-item-body">The situation or trigger. In nutrition contexts: eating an unplanned food, missing planned exercise, a social eating event, seeing a number on the scale, receiving a comment about eating or body. Critically — the event itself is not what determines the emotional or behavioural response. Two people can experience the same activating event and respond completely differently depending on their beliefs.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">B — Beliefs / Automatic thoughts</div>
+          <div class="expand-item-body">The interpretation of the event — rapid, often unconscious, and experienced as fact. "I've ruined everything." "I have no willpower." "What's the point." "Everyone noticed." These thoughts feel like objective reality to the person experiencing them, but they are interpretations shaped by core beliefs, past experiences, and cognitive habits — not facts about the situation.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">C — Consequences</div>
+          <div class="expand-item-body">The emotional reactions (shame, guilt, frustration, hopelessness) and behavioural responses (restriction, bingeing, avoidance, giving up) that follow from B — not directly from A. This is the key therapeutic insight: it is the belief about what happened that drives behaviour, not the event itself. Changing B changes C — without changing the external circumstances at all.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Clinical application for dietitians</div>
+          <div class="expand-item-body">When a client describes a dietary "slip" or setback, explore B before responding to C. Ask: "What did you tell yourself when that happened?" or "What went through your mind in that moment?" This opens the cognitive work and reveals the beliefs that need addressing — rather than reinforcing the narrative that the food itself (A) was the problem. Many clients have never had anyone ask them this question.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cognitive distortions -->
+    <div class="expand-card card-dist" id="card-dist">
+      <button class="expand-trigger" onclick="toggleCard('card-dist')">
+        <div class="expand-trigger-left">
+          <span class="expand-label">Cognitive distortions in eating behaviour</span>
+          <span class="expand-badge">Clinical patterns</span>
+        </div>
+        <span class="expand-icon">+</span>
+      </button>
+      <div class="expand-body">
+        <div class="expand-item">
+          <div class="expand-item-heading">All-or-nothing (black &amp; white) thinking</div>
+          <div class="expand-item-body">The most common cognitive distortion in dietary behaviour change. "I ate chips so my diet is ruined." Any deviation from a plan equals total failure. This fuels the restrict → lapse → binge → shame → restrict cycle. Watch for absolutes: "completely," "total," "ruined," "blown it," "failed." One imperfect meal in a week of good eating is objectively a 93% success — but all-or-nothing thinking makes it feel like zero.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Catastrophising</div>
+          <div class="expand-item-body">"If I can't stick to this I'll never be healthy." Magnifying the significance and permanence of a single event. The past is treated as a reliable predictor of all future outcomes. Listen for words like "always," "never," "everyone," "completely," "forever" — these flag catastrophising language that needs gentle examination.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Should/must statements</div>
+          <div class="expand-item-body">Rigid food rules create shame and failure when inevitably broken. "I should never eat after 8pm." "I must be perfect on weekdays." "I shouldn't eat carbs." These rules often originate in diet culture rather than evidence. When a client uses "should," ask: "Where does that rule come from? What happens when you break it? Is it serving you well?" Rigid rules are incompatible with flexible, sustainable eating.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Emotional reasoning</div>
+          <div class="expand-item-body">"I feel disgusting after eating that, so it must have been terrible for me." Treating feelings as evidence of facts. Common after consuming "forbidden" foods — the guilt feels proportional to a serious health transgression even when the intake was moderate. The feeling is real; what it proves about the food or the person is not.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Discounting the positive</div>
+          <div class="expand-item-body">A client who follows their meal plan on 6 out of 7 days but focuses exclusively on the one difficult day. Positive progress is dismissed ("that doesn't count, anyone could do that") while negatives are amplified. Cognitive restructuring begins by making the positives as visible, concrete, and valid as the negatives — not by dismissing the difficulty, but by restoring proportion.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RRR -->
+    <div class="expand-card card-rrr" id="card-rrr">
+      <button class="expand-trigger" onclick="toggleCard('card-rrr')">
+        <div class="expand-trigger-left">
+          <span class="expand-label">Cognitive restructuring — the RRR framework</span>
+          <span class="expand-badge">Technique</span>
+        </div>
+        <span class="expand-icon">+</span>
+      </button>
+      <div class="expand-body">
+        <div class="expand-item">
+          <div class="expand-item-heading">Record — capture the thought precisely</div>
+          <div class="expand-item-body">Write the automatic thought in the client's own words, in first person, exactly as it occurred. "I'm a failure. I ate birthday cake and ruined my diabetes management." Specificity is critical — vague records are harder to examine and challenge. The thought diary approach (recording situation, feelings 0–100, thought, and the "hottest" most distressing thought) provides structure for this process.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Rationalise — examine the evidence</div>
+          <div class="expand-item-body">Socratic questions to examine the thought: What is the evidence that supports it? What evidence challenges it? Is it logical, realistic, and fair? Is it a compassionate way of thinking about yourself? What would you say to a close friend in exactly this situation? What would a reasonable, caring observer say? What does the actual data show — the food diary, the readings, the adherence record?</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Replace — develop a balanced alternative</div>
+          <div class="expand-item-body">The goal is accuracy — not toxic positivity. The replacement thought must be honest and believable to the client, not a cheerful slogan they don't believe. Example: Original: "I'm a complete failure — I ate birthday cake and ruined everything." Balanced alternative: "I had one slice of cake at my son's birthday. My readings this week are still in target range. One food choice does not determine my health outcomes. I can return to my usual eating pattern at the next meal."</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">The clinical reminder</div>
+          <div class="expand-item-body">The dietitian guides the discovery through Socratic questioning — they do NOT correct the thought or provide the replacement for the client. Insight generated by the client themselves is far more durable, motivating, and generalisable than insight provided by a clinician. Your job is to ask good questions, not to supply good answers. Curiosity over correction; guided discovery over persuasion.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STOPP -->
+    <div class="expand-card card-stopp" id="card-stopp">
+      <button class="expand-trigger" onclick="toggleCard('card-stopp')">
+        <div class="expand-trigger-left">
+          <span class="expand-label">The STOPP technique</span>
+          <span class="expand-badge">CBT in practice</span>
+        </div>
+        <span class="expand-icon">+</span>
+      </button>
+      <div class="expand-body">
+        <div class="expand-item">
+          <div class="expand-item-heading">S — Stop</div>
+          <div class="expand-item-body">Pause when you notice distressing thoughts or urges arising. Create a deliberate gap between stimulus and response. Even a 5-second pause interrupts the automatic behavioural chain — the space between impulse and action is where change becomes possible. Simply noticing "I'm having a strong thought right now" creates cognitive distance.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">T — Take a breath</div>
+          <div class="expand-item-body">One slow, deliberate deep breath activates the parasympathetic nervous system, reducing physiological arousal and literally restoring prefrontal cortex (thinking brain) function that is suppressed during stress. This is not a relaxation technique — it is a neurological reset. The breath is a tool, not a metaphor.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">O — Observe</div>
+          <div class="expand-item-body">Notice what the mind is saying and what the body is doing — with curiosity, not judgement. "There goes my mind telling me I've failed again." Observation creates distance between the self and the thought. Thoughts become events to observe, not commands to obey. This is the mindfulness component of CBT — witnessing experience rather than being consumed by it.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">P — Pull back &amp; Perspective</div>
+          <div class="expand-item-body">See the bigger picture. Is this thought a fact or an interpretation? What would I say to a friend in this moment? How significant will this feel in a week, a month, a year? Consider other possible explanations. Zoom out from the immediate distress to the wider context of who you are, what you have achieved, and what actually matters to you.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">P — Practice what works &amp; Proceed</div>
+          <div class="expand-item-body">Choose the response most aligned with your values and long-term goals — not the most automatic, habitual, or immediately gratifying one. With regular practice (including during calm moments, not just crisis), STOPP becomes habitual and begins interrupting distress cycles before they escalate. The STOPP app and getselfhelp.co.uk provide client-facing resources and worksheets.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Self-efficacy -->
+    <div class="expand-card card-stopp" id="card-se" style="--border:#8B6000">
+      <button class="expand-trigger" onclick="toggleCard('card-se')">
+        <div class="expand-trigger-left">
+          <span class="expand-label">Self-efficacy in nutrition counselling</span>
+          <span class="expand-badge">Bandura's model</span>
+        </div>
+        <span class="expand-icon">+</span>
+      </button>
+      <div class="expand-body">
+        <div class="expand-item">
+          <div class="expand-item-heading">Why self-efficacy predicts behaviour change</div>
+          <div class="expand-item-body">Self-efficacy — the belief in one's ability to perform a specific behaviour in a specific situation — is one of the strongest predictors of dietary behaviour change. Importantly, it is situation-specific: a client may have high efficacy for cooking at home but very low efficacy for making healthy choices at a work morning tea. Always assess efficacy for the specific behaviour, not globally.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Source 1: Mastery experiences</div>
+          <div class="expand-item-body">Past successes are the most powerful source of self-efficacy. Help clients identify times they have achieved a dietary or health-related goal, even partially. "Tell me about a time when you managed to eat well even when it was difficult." Graded task assignment — setting goals that are achievable before progressing to harder ones — deliberately builds mastery experiences and therefore efficacy.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Sources 2–4: Vicarious, verbal &amp; physiological</div>
+          <div class="expand-item-body">Vicarious experiences ("people like me can do this") make peer support and group interventions powerful. Verbal persuasion — affirmation from a trusted clinician — helps, but should be specific and credible, not generic cheerleading. Physiological states matter: anxiety, fatigue, and hunger reduce perceived efficacy. Addressing practical barriers (sleep, stress, meal prep) builds the conditions in which efficacy can grow.</div>
+        </div>
+        <div class="expand-item">
+          <div class="expand-item-heading">Clinical application — the confidence ruler</div>
+          <div class="expand-item-body">Before finalising a goal, assess efficacy: "On a scale of 0–10, how confident are you that you could achieve this goal over the next week?" A score below 7 signals the goal needs revision — not the client. Ask: "What would need to be different for this to feel more achievable?" Revise the goal until the client reaches 7+. This single step dramatically improves follow-through and prevents demoralising failure experiences.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 2: CASE STUDIES -->
+  <section class="tab-panel" id="panel-2">
+    <p class="panel-intro">Work through each case study by writing your responses to the questions below. Reveal the model answer key to compare and extend your thinking. There are no single correct answers — use these to identify gaps and deepen your clinical reasoning.</p>
+
+    <!-- Case 1 -->
+    <div class="case-card">
+      <div class="case-header">
+        <span class="case-tag" style="background:#D1FAE5; color:#065F46;">Lifespan — Pre-school</span>
+        <span class="case-title">Case study 1: The picky pre-schooler</span>
+      </div>
+      <div class="case-scenario">
+        You are a dietitian seeing 4-year-old Aiden with his mother, Priya. Priya reports that Aiden has been on a "pasta-only kick" for 6 weeks — refusing all other foods and having a meltdown whenever a new food appears on his plate. She is anxious about nutritional deficiencies. She has started making separate meals for him and bribing him with dessert to eat "a few bites" of other foods. Dad thinks they should "just let him eat pasta until he gets sick of it."
+      </div>
+      <div class="case-question">
+        <label>Question 1: What behavioural and developmental factors are driving Aiden's food behaviour? What is normal vs concerning here?</label>
+        <textarea placeholder="Write your answer here..."></textarea>
+      </div>
+      <div class="case-question">
+        <label>Question 2: How would you respond to Priya's concern about nutritional deficiencies? What would you assess first?</label>
+        <textarea placeholder="Write your answer here..."></textarea>
+      </div>
+      <div class="case-question">
+        <label>Question 3: What specific counselling strategies would you recommend? How do you navigate the parents' different approaches?</label>
+        <textarea placeholder="Write your answer here..."></textarea>
+      </div>
+      <button class="reveal-btn" onclick="toggleAnswer('ans-cs1')">Reveal model answer key</button>
+      <div class="model-answer" id="ans-cs1">
+        <div class="model-answer-heading">&#10003; Model answer key — Case study 1</div>
+        <div class="model-answer-section">
+          <h4>Developmental context</h4>
+          <p>Food jags (eating only one food repetitively) and food neophobia are developmentally normal in children aged 2–6 years. Aiden is asserting autonomy through food — a hallmark of this stage. The reduced rate of growth compared to infancy means energy needs are lower and appetite is naturally more variable. This is not defiance; it is development. Food neophobia typically peaks at 2–6 years and requires 8–15 low-pressure exposures before a new food is accepted.</p>
+        </div>
+        <div class="model-answer-section">
+          <h4>Concerning elements to assess</h4>
+          <p>While food jags are normal, assess iron, zinc, and calcium status (dietary and if warranted, biochemical). Watch for signs of micronutrient deficiency: pallor, fatigue, frequent illness (iron/zinc), or poor growth. Enriched pasta does provide some iron and B vitamins — ask about brand and whether Priya is adding any protein or sauce. Also assess whether Aiden is drinking excessive milk, which can displace iron-rich foods.</p>
+        </div>
+        <div class="model-answer-section">
+          <h4>Strategies — Satter's Division of Responsibility</h4>
+          <p>Introduce Satter's Division of Responsibility: Priya decides WHAT is offered, WHEN, and WHERE; Aiden decides whether and how much he eats. Recommend serving pasta alongside (not instead of) other family foods without pressure. Stop the separate meal preparation — this reinforces the jag. Discourage dessert as a reward (coercive feeding) as it elevates the value of the "reward" food and can worsen the problem long-term.</p>
+        </div>
+        <div class="model-answer-section">
+          <h4>Navigating parental differences</h4>
+          <p>Validate both parents' instincts — Priya's concern is appropriate and caring; Dad's "let it go" approach has some merit (low pressure is evidence-based). Reframe the recommendation as a middle path: consistent structure and family meals, no pressure to eat the new food, but continued exposure on the plate without comment. Involving Aiden in food selection and simple meal preparation (stirring, picking the sauce) can increase engagement without pressure.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Case 2 -->
+    <div class="case-card">
+      <div class="case-header">
+        <span class="case-tag" style="background:#EDE9FE; color:#4C1D95;">Lifespan — Adolescence</span>
+        <span class="case-title">Case study 2: The disengaged adolescent</span>
+      </div>
+      <div class="case-scenario">
+        Mia is a 15-year-old referred by her GP for fatigue and low iron. She attends with her mother but is clearly reluctant — she uses her phone throughout. When asked about eating she says: "I skip breakfast, have chips and a Red Bull at lunch, then whatever Mum makes for dinner but I usually go to my room." She plays netball 3x/week. Her mother interjects frequently. Mia rolls her eyes each time.
+      </div>
+      <div class="case-question">
+        <label>Question 1: What developmental and behavioural factors are at play? How does Mia's adolescent stage shape your approach?</label>
+        <textarea placeholder="Write your answer here..."></textarea>
+      </div>
+      <div class="case-question">
+        <label>Question 2: How do you navigate the mother's presence and involvement while building genuine rapport with Mia?</label>
+        <textarea placeholder="Write your answer here..."></textarea>
+      </div>
+      <div class="case-question">
+        <label>Question 3: What specific MI techniques would you use in this session? What would be a realistic first goal?</label>
+        <textarea placeholder="Write your answer here..."></textarea>
+      </div>
+      <button class="reveal-btn" onclick="toggleAnswer('ans-cs2')">Reveal model answer key</button>
+      <div class="model-answer" id="ans-cs2">
+        <div class="model-answer-heading">&#10003; Model answer key — Case study 2</div>
+        <div class="model-answer-section">
+          <h4>Developmental context</h4>
+          <p>Mia is in mid-adolescence — a stage defined by increasing autonomy, peer influence, identity development, and resistance to parental/adult authority. Her disengagement is not unusual; it is developmentally expected. The phone use and eye-rolling reflect that she feels this appointment was not her choice. Resistance is information, not obstruction. Her iron deficiency is likely contributing to the fatigue, which may be your best motivational hook — she plays netball and presumably cares about her performance.</p>
+        </div>
+        <div class="model-answer-section">
+          <h4>Managing the parent dynamic</h4>
+          <p>Early in the session, acknowledge the mother's care and concern, then redirect: "It's wonderful you're here supporting Mia. To help me understand things from Mia's perspective, would you be okay if I spoke with her directly for a little while?" Consider asking the mother to briefly step out for part of the session. Avoid appearing to "side" with Mia against her mother — frame the one-to-one time as standard practice, not a judgement on the mother.</p>
+        </div>
+        <div class="model-answer-section">
+          <h4>MI techniques for this session</h4>
+          <p>Use open questions that invite Mia's perspective without judgement: "What's netball like for you at the moment?" "When do you feel at your best energy — what's your day usually like then?" Reflective listening: "So you're tired a lot — that sounds pretty frustrating when you want to train." Ask permission before giving information: "Would it be okay if I shared something about what I often see in players who feel the way you do?" Explore the discrepancy gently: "You mentioned you want to play better — what do you think gets in the way of that?"</p>
+        </div>
+        <div class="model-answer-section">
+          <h4>Realistic first goal</h4>
+          <p>A single, small, self-chosen change with high confidence (7+/10) is far more valuable than an ambitious plan. A realistic starting point might be: adding one iron-containing food to her lunch (e.g., switching one day to a chicken wrap), or having a small breakfast before netball training only. Frame it around energy and performance, not nutrition or health. Let Mia choose and name the goal — ownership drives follow-through.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Case 3 -->
+    <div class="case-card">
+      <div class="case-header">
+        <span class="case-tag" style="background:#FEE2E2; color:#7F1D1D;">Cognitions &amp; CBT</span>
+        <span class="case-title">Case study 3: The cognitive saboteur</span>
+      </div>
+      <div class="case-scenario">
+        David, 48, has type 2 diabetes. He arrives looking defeated: "I've completely blown it this week. There was a morning tea at work and I had two pieces of cake. I just can't do this. I've been trying for 3 months and I always end up back at square one. I'm clearly a person who just can't control themselves around food." His food diary shows he followed his meal plan on 6 out of 7 days this week.
+      </div>
+      <div class="case-question">
+        <label>Question 1: Identify at least TWO cognitive distortions in David's statement. Name them and explain the evidence for each.</label>
+        <textarea placeholder="Write your answer here..."></textarea>
+      </div>
+      <div class="case-question">
+        <label>Question 2: Write 2–3 specific questions you would ask to gently explore these thoughts without being dismissive.</label>
+        <textarea placeholder="Write your answer here..."></textarea>
+      </div>
+      <div class="case-question">
+        <label>Question 3: Using the RRR framework, work through David's "hot thought" step by step.</label>
+        <textarea placeholder="Write your answer here..."></textarea>
+      </div>
+      <button class="reveal-btn" onclick="toggleAnswer('ans-cs3')">Reveal model answer key</button>
+      <div class="model-answer" id="ans-cs3">
+        <div class="model-answer-heading">&#10003; Model answer key — Case study 3</div>
+        <div class="model-answer-section">
+          <h4>Cognitive distortions present</h4>
+          <p><strong>All-or-nothing thinking:</strong> "I've completely blown it" and "I always end up back at square one" — his food diary objectively shows 6/7 days of adherence (86%), which is excellent. One difficult day is being framed as total failure. <strong>Overgeneralising:</strong> "I always end up back at square one" — three months of effort is being dismissed based on one event. <strong>Labelling:</strong> "I'm clearly a person who just can't control themselves" — David has defined his whole identity based on a single behaviour. <strong>Discounting the positive:</strong> Six days of successful adherence are being completely ignored.</p>
+        </div>
+        <div class="model-answer-section">
+          <h4>Socratic questions to explore the thoughts</h4>
+          <p>"David, I'm looking at your diary here — can you help me understand what 'square one' looks like to you?" / "You mentioned you've been trying for 3 months. What has actually changed in that time?" / "If a friend came to you and said they'd stuck to their plan 6 out of 7 days, what would you tell them?" / "What does your food diary from this week actually show — can we look at it together?" These questions invite David to examine the evidence himself rather than being corrected by you.</p>
+        </div>
+        <div class="model-answer-section">
+          <h4>RRR applied to David's hot thought</h4>
+          <p><strong>Record:</strong> "I'm clearly a person who just can't control themselves around food." <strong>Rationalise:</strong> Evidence against — food diary shows 6/7 days of adherence this week; 3 months of sustained effort; this is the first major lapse he has reported; he attended the appointment today despite feeling defeated. Evidence for — he ate 2 pieces of cake at morning tea. Is one lapse over 3 months evidence that he "can't control himself"? Is it logical? Is it fair? <strong>Replace:</strong> "I had a difficult moment at a work event. My diary shows I've managed well on 86% of days this week and for 3 months. One challenging situation doesn't cancel that out. I can focus on what I do well and return to my plan at the next meal."</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Case 4 -->
+    <div class="case-card">
+      <div class="case-header">
+        <span class="case-tag" style="background:#DBEAFE; color:#1E3A5F;">Lifespan — Older adults</span>
+        <span class="case-title">Case study 4: Older adult complexity</span>
+      </div>
+      <div class="case-scenario">
+        Evelyn is 78, referred by her GP for unintentional weight loss of 5 kg over 3 months. She lives alone following the death of her husband 8 months ago. She takes 9 medications. She reports: "I used to cook for two — now I can't be bothered just for myself. Things don't taste the same. The television is my company at mealtimes." Assessment findings include reduced grip strength, mild dehydration, and poor dentition.
+      </div>
+      <div class="case-question">
+        <label>Question 1: Categorise the factors affecting Evelyn's nutritional status (physical / social / psychological / physiological / environmental). Be thorough.</label>
+        <textarea placeholder="Write your answer here..."></textarea>
+      </div>
+      <div class="case-question">
+        <label>Question 2: Which factors would you prioritise addressing first, and why? What specific strategies would you recommend?</label>
+        <textarea placeholder="Write your answer here..."></textarea>
+      </div>
+      <div class="case-question">
+        <label>Question 3: How does your counselling approach need to adapt for Evelyn compared to a younger adult client?</label>
+        <textarea placeholder="Write your answer here..."></textarea>
+      </div>
+      <button class="reveal-btn" onclick="toggleAnswer('ans-cs4')">Reveal model answer key</button>
+      <div class="model-answer" id="ans-cs4">
+        <div class="model-answer-heading">&#10003; Model answer key — Case study 4</div>
+        <div class="model-answer-section">
+          <h4>Categorisation of factors</h4>
+          <p><strong>Physical:</strong> Reduced grip strength (sarcopenia risk), poor dentition (limits food choices and chewing capacity), unintentional weight loss (5 kg over 3 months is clinically significant), possible frailty. <strong>Social:</strong> Social isolation, eating alone, bereavement — eating for one is a known risk factor for reduced dietary intake and quality. <strong>Psychological:</strong> Grief (husband died 8 months ago), possible depression (low motivation, "can't be bothered"), loss of purpose and identity as a cook/caregiver. <strong>Physiological:</strong> Taste/smell changes (common with age), polypharmacy (9 medications — consider B12, potassium, appetite interactions), reduced appetite, possible malabsorption, mild dehydration. <strong>Environmental:</strong> Cooking for one reduces motivation; meal planning and preparation designed for two is no longer relevant.</p>
+        </div>
+        <div class="model-answer-section">
+          <h4>Prioritisation and strategies</h4>
+          <p>First priority: dental referral (without adequate dentition, dietary change is severely limited) and GP discussion about medication review for appetite/nutrition effects. Second priority: address social isolation — social prescription (community dining, lunch clubs, meals with family). Research shows eating with others significantly improves intake. Third priority: practical food strategies — nutrient-dense, small-volume meals requiring minimal preparation; fortified foods; protein distribution across meals to address sarcopenia risk. Assess for depression and refer to GP or psychologist if indicated — treating underlying low mood may be the most impactful nutritional intervention.</p>
+        </div>
+        <div class="model-answer-section">
+          <h4>Counselling approach adaptations</h4>
+          <p>Begin with Evelyn's food story — what she used to cook, what meals meant to her and her husband. This builds rapport, reveals her capabilities and values, and positions her as the expert in her own life. Use visuals and simple written summaries rather than complex dietary information. Allow more time; don't rush to solutions. Address practical barriers (can she physically shop, prepare food, open packaging?) before dietary advice. Be alert to grief — acknowledge loss explicitly. Practical, compassionate, and person-centred care is the framework; dietary advice is a tool within it, not the starting point.</p>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <p>DIET7103 Lifespan interviewing and counselling &nbsp;·&nbsp; Workshop 8 extended materials &nbsp;·&nbsp; The University of Queensland</p>
+  <p style="margin-top:4px;">For educational use only &nbsp;·&nbsp; Dr Olivia Wright PhD AdvAPD</p>
+</footer>
+
+<script>
+  function switchTab(index) {
+    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+      b.classList.toggle('active', i === index);
     });
-    const data = await res.json();
-    return data.content?.[0]?.text || "No response received.";
-  } catch {
-    return "Connection error. Please try again.";
+    document.querySelectorAll('.tab-panel').forEach((p, i) => {
+      p.classList.toggle('active', i === index);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-}
 
-const LIFESPAN = [
-  {
-    id: "pre",
-    label: "Age 2–5 years",
-    sub: "Pre-school",
-    bg: "#f0faf7",
-    border: "#2a9d8f",
-    tag: "bg-teal-100 text-teal-800",
-    extra: [
-      { heading: "Iron, zinc & calcium", body: "These three nutrients are critical during pre-school years. Iron deficiency anaemia remains prevalent and impairs cognitive development — ask about red meat, legumes, fortified cereals, and vitamin C intake to enhance absorption. Calcium needs are 700mg/day (age 1–3) and 1000mg/day (age 4–8)." },
-      { heading: "Food neophobia is normal", body: "Food neophobia peaks at ages 2–6. Research shows 8–15 exposures may be needed before a new food is accepted. Parents often give up after 3–4 tries. Validate the frustration, then reframe: repeated low-pressure exposure in a calm setting is evidence-based." },
-      { heading: "Satter's Division of Responsibility", body: "Parents are responsible for WHAT food is offered, WHEN, and WHERE. Children are responsible for WHETHER they eat and HOW MUCH. This model reduces coercion, which is associated with worse long-term food relationships." },
-      { heading: "Sensory vs nutrient language", body: "Pre-schoolers categorise food by colour, shape, and texture — not nutrients. Use sensory language ('this is crunchy like crackers, want to try?') rather than health framing ('this has lots of vitamins'). Engage their exploratory nature — touching and smelling food counts as a step toward eating it." },
-      { heading: "Screen time & eating", body: "Distracted eating impairs satiety cue recognition. The Australian Government recommends no screens during meals. Screen time should be under 1 hour/day in this age group. Media exposure to food advertising also begins shaping preferences early." }
-    ]
-  },
-  {
-    id: "mid",
-    label: "Age 6–12 years",
-    sub: "Middle childhood",
-    bg: "#fff9f0",
-    border: "#e76f51",
-    tag: "bg-orange-100 text-orange-800",
-    extra: [
-      { heading: "The school food environment", body: "Children make more independent food choices at school — canteen access, packed lunch contents, and peer eating norms all shape intake. Broaden your assessment beyond the home. Consider school canteen policies as a systems-level lever." },
-      { heading: "Family meals as protective factor", body: "Strong evidence links regular family meals (even 3x/week) with healthier dietary patterns, lower obesity risk, and reduced disordered eating risk. Family meals provide structure, modelling, and social connection — all of which influence eating behaviour." },
-      { heading: "Weight-sensitive language", body: "This age group is highly susceptible to weight stigma and the formation of disordered eating patterns. Focus on energy for sport, mood, concentration, and immune health — never on weight or body size. The 'healthy weight' discourse in school settings requires careful navigation." },
-      { heading: "Media literacy as intervention", body: "Children ages 6–12 see 10–15 food advertisements daily. Incorporating media literacy into nutrition education builds critical thinking about food marketing. Resources like the Australian Healthy Eating Advisory Service provide age-appropriate materials." },
-      { heading: "Action-based engagement", body: "Abstract concepts about nutrition don't land well at this stage. Hands-on cooking, growing food (school gardens), food photography diaries, and interactive games are far more effective than verbal or written nutrition education." }
-    ]
-  },
-  {
-    id: "adol",
-    label: "Age 13–19 years",
-    sub: "Adolescence",
-    bg: "#f5f0ff",
-    border: "#7209b7",
-    tag: "bg-purple-100 text-purple-800",
-    extra: [
-      { heading: "Peak nutrient demands", body: "Adolescence represents a lifetime peak for iron (particularly females post-menarche), calcium (bone mineralisation), and zinc. Despite high needs, dietary quality often declines during this period. Frame nutrients through what THEY care about: iron → energy and sport performance; calcium → bone strength for sport." },
-      { heading: "Body image is the elephant in the room", body: "Adolescence is the highest-risk period for developing eating disorders. Approach all discussions of food, weight, and body with extreme care. The HAES (Health at Every Size) framework and weight-neutral language are strongly recommended. Never comment on weight or body shape unprompted." },
-      { heading: "The MI imperative", body: "Adolescents are developmentally wired to resist adult direction — this is healthy identity formation. Motivational Interviewing (MI) is particularly powerful because it respects autonomy. Ask permission before giving advice. Use reflective listening. Let them identify the discrepancy between current behaviour and their own values." },
-      { heading: "Social media & diet culture", body: "TikTok, Instagram and YouTube expose adolescents to intermittent fasting, 'clean eating,' detoxes, and extreme physiques daily. Don't dismiss this — acknowledge it directly. Build critical evaluation skills. Connect evidence-based information to their language and platforms where possible." },
-      { heading: "The sub-stages matter", body: "Early adolescence (12–14): family-focused, clear short messages. Mid-adolescence (15–17): leverage emerging abstract thinking for pros/cons analysis and problem-solving. Late adolescence (18–19): increasing complexity, life transitions, autonomy over food environment. Tailor your approach accordingly." }
-    ]
-  },
-  {
-    id: "older",
-    label: "Age 65+",
-    sub: "Older adults",
-    bg: "#eef4ff",
-    border: "#1a5276",
-    tag: "bg-blue-100 text-blue-800",
-    extra: [
-      { heading: "Sarcopenia & protein timing", body: "Muscle loss accelerates after 65. Protein requirements increase to 1.0–1.2g/kg/day (vs 0.8g/kg in younger adults). Critically, protein distribution across meals matters — a single large protein serving is less effective than spreading intake. Leucine-rich foods (meat, eggs, dairy, legumes) are particularly important." },
-      { heading: "The polypharmacy nutrition interaction", body: "Common medications affect nutrition: metformin depletes B12; diuretics deplete potassium and magnesium; warfarin interacts with vitamin K; PPIs impair iron and B12 absorption; steroids increase calcium excretion. Always take a full medication history and consider nutrient-drug interactions in your assessment." },
-      { heading: "Sensory changes", body: "Taste (especially salty and sweet) and smell decline with age, often making food less appealing. Zinc deficiency (which is common) worsens taste perception. Enhance flavour with herbs, spices, umami-rich foods, and meal variety rather than adding salt. Ensure dental status is assessed — dentition significantly affects food choices." },
-      { heading: "Social isolation as a nutrition risk", body: "Social isolation is comparable in health impact to smoking 15 cigarettes/day. Eating alone is strongly associated with reduced appetite and meal quality. Social prescription — connecting clients with community dining programs, meals-on-wheels, or social groups — can be as impactful as any dietary change." },
-      { heading: "Person-centred practice", body: "Food is identity, culture, and memory. Older adults have decades of food beliefs and habits. Start with their food story — what meals meant to them, what they used to cook. Build recommendations onto existing preferences and practices. Practical barriers (transport, cooking capacity, income, cognition) often need addressing before dietary quality can improve." }
-    ]
+  function toggleCard(id) {
+    const card = document.getElementById(id);
+    card.classList.toggle('open');
   }
-];
 
-const CBT_CARDS = [
-  {
-    id: "abc",
-    label: "The ABC model",
-    icon: "A→B→C",
-    bg: "#fff0f0",
-    border: "#c0392b",
-    content: [
-      { h: "A = Activating event", b: "The situation or trigger. In nutrition: eating unplanned food, missing exercise, a social eating situation. Importantly — the event itself is not the problem." },
-      { h: "B = Beliefs / Automatic thoughts", b: "The interpretation of the event: 'I've ruined everything.' 'I have no willpower.' 'What's the point.' These happen rapidly and feel like facts — but they are thoughts, not reality." },
-      { h: "C = Consequences", b: "Emotional reactions (shame, guilt, frustration) and behavioural responses (restriction, bingeing, giving up). The C follows from B, not directly from A. This is the key therapeutic insight." },
-      { h: "Clinical application for dietitians", b: "When a client describes a dietary 'slip,' explore B before responding to C. Ask: 'What did you tell yourself when that happened?' This opens the cognitive work that makes behaviour change sustainable." }
-    ]
-  },
-  {
-    id: "dist",
-    label: "Cognitive distortions",
-    icon: "Thoughts",
-    bg: "#f0f8ff",
-    border: "#2980b9",
-    content: [
-      { h: "All-or-nothing (black & white) thinking", b: "'I ate chips so my diet is ruined.' Any deviation = total failure. Extremely common in clients with weight or diabetes management goals. Creates the restrict→binge→shame cycle." },
-      { h: "Catastrophising", b: "'If I can't stick to this I'll never be healthy.' Magnifying the significance of a single event. Watch for words like 'always,' 'never,' 'everyone,' 'completely.'" },
-      { h: "Should/must statements", b: "Rigid food rules (I should never eat after 8pm, I must be perfect on weekends) generate shame when inevitably broken. These rules often originate from diet culture, not evidence." },
-      { h: "Emotional reasoning", b: "'I feel disgusting after eating that, so it must have been terrible for me.' Feelings are treated as facts. Common after eating 'forbidden' foods even when intake was moderate." },
-      { h: "Discounting the positive", b: "A client who eats well on 6/7 days but only focuses on the one difficult day. Cognitive restructuring begins by making the positives as visible and real as the negatives." }
-    ]
-  },
-  {
-    id: "rrr",
-    label: "Cognitive restructuring (RRR)",
-    icon: "RRR",
-    bg: "#f0fff4",
-    border: "#27ae60",
-    content: [
-      { h: "Record — capture the thought exactly", b: "Write it in first person, in the client's own words. 'I'm a failure. I ate birthday cake and ruined my diabetes.' Specificity matters — vague thoughts are harder to examine." },
-      { h: "Rationalise — examine the evidence", b: "What evidence supports this thought? What evidence challenges it? Is it logical, realistic, and fair? Would you say this to a friend? What would a compassionate observer say?" },
-      { h: "Replace — develop a balanced alternative", b: "NOT a toxic-positive replacement. The goal is accuracy, not optimism. 'I ate birthday cake at a celebration. My week was otherwise consistent. One meal does not determine outcomes. I can return to my plan at the next meal.'" },
-      { h: "Dietitian's clinical reminder", b: "The counsellor guides discovery through Socratic questioning — they do NOT correct or replace the thought for the client. Insight generated by the client is far more durable than insight provided by you." }
-    ]
-  },
-  {
-    id: "stopp",
-    label: "STOPP technique",
-    icon: "STOPP",
-    bg: "#fffbf0",
-    border: "#d4a017",
-    content: [
-      { h: "S — Stop", b: "Pause when you notice distressing thoughts or urges. Create a gap between stimulus and response. Even a 5-second pause interrupts automatic behaviour chains." },
-      { h: "T — Take a breath", b: "One slow, deep breath activates the parasympathetic nervous system, reducing physiological arousal. This literally brings the 'thinking brain' (prefrontal cortex) back online." },
-      { h: "O — Observe", b: "Notice what your mind is saying ('there go my thoughts again') and what your body is doing. Observation creates distance — thoughts become events to watch, not commands to obey." },
-      { h: "P — Pull back & Perspective", b: "See the bigger picture. Is this thought a fact? What would I say to a friend? How will this matter in a week? Consider other viewpoints and broader context." },
-      { h: "P — Practice what works & Proceed", b: "Choose the response most aligned with your values and goals — not the most automatic one. With practice, STOPP becomes habitual and interrupts distress cycles before they escalate." }
-    ]
+  function toggleAnswer(id) {
+    const answer = document.getElementById(id);
+    const isVisible = answer.classList.contains('visible');
+    answer.classList.toggle('visible', !isVisible);
+    const btn = answer.previousElementSibling;
+    btn.textContent = isVisible ? 'Reveal model answer key' : 'Hide model answer key';
   }
-];
-
-const CASE_STUDIES = [
-  {
-    id: "cs1",
-    title: "Case study 1: The picky pre-schooler",
-    tag: "Lifespan — Pre-school",
-    tagStyle: { background: "#d1fae5", color: "#065f46" },
-    scenario: "You are a dietitian seeing 4-year-old Aiden with his mother, Priya. Priya reports Aiden has been on a 'pasta-only kick' for 6 weeks — refusing everything else and having meltdowns when new foods appear. She is anxious about nutritional deficiencies. She has started making separate meals for him and bribing him with dessert to try 'a few bites' of other foods. Dad thinks they should 'just let him eat pasta until he gets sick of it.'",
-    questions: ["What behavioural and developmental factors are driving Aiden's behaviour? What is normal vs concerning here?", "How would you respond to Priya's concern about nutritional deficiencies? What would you assess?", "What specific counselling strategies would you recommend, and how do you navigate the parents' different approaches?"],
-    system: "You are a dietitian educator providing feedback to a dietitian student on a case study about a pre-school child with food neophobia and food jags. Evaluate their answer against best practice in paediatric nutrition counselling: Satter's Division of Responsibility, exposure learning (8-15 exposures), the normalcy of food neophobia at age 2-6, avoiding coercive feeding practices, assessing iron/zinc/calcium status, family-based strategies, and action-oriented counselling. Be warm, constructive, and specific. Acknowledge what they got right and gently add what was missed. Keep to 4-6 paragraphs."
-  },
-  {
-    id: "cs2",
-    title: "Case study 2: The disengaged adolescent",
-    tag: "Lifespan — Adolescence",
-    tagStyle: { background: "#ede9fe", color: "#4c1d95" },
-    scenario: "Mia is a 15-year-old referred by her GP for fatigue and low iron. She attends with her mother but is clearly reluctant — she uses her phone throughout. When asked about eating she says: 'I skip breakfast, have chips and a Red Bull at lunch, then whatever Mum makes for dinner but I usually go to my room.' She plays netball 3x/week. Her mother interjects frequently with additional information. Mia rolls her eyes each time.",
-    questions: ["What developmental and behavioural factors are at play? How does Mia's adolescent stage shape your approach?", "How do you navigate the mother's presence and involvement while building genuine rapport with Mia?", "What specific MI techniques would you use in this session? What would be a realistic first goal?"],
-    system: "You are a dietitian educator providing feedback to a dietitian student on an adolescent case study involving low iron, poor dietary quality, and a resistant client. Evaluate their answer against best practice: motivational interviewing for adolescents, respecting autonomy, working with not against resistance, adolescent-specific engagement strategies (meeting their agenda, energy and sport framing, peer influence), managing parent/child dynamics in consultations, and iron-rich dietary strategies. Be warm, encouraging, and specific. 4-6 paragraphs."
-  },
-  {
-    id: "cs3",
-    title: "Case study 3: The diet saboteur cognitions",
-    tag: "Cognitions & CBT",
-    tagStyle: { background: "#fee2e2", color: "#7f1d1d" },
-    scenario: "David, 48, has type 2 diabetes. He arrives looking defeated: 'I've completely blown it this week. There was a morning tea at work and I had two pieces of cake. I just can't do this. I've been trying for 3 months and I always end up back at square one. I'm clearly a person who just can't control themselves around food.' His food diary shows he adhered to his meal plan on 6 out of 7 days this week.",
-    questions: ["Identify at least TWO cognitive distortions in David's statement. Name them and explain the evidence.", "Write 2–3 specific questions you would ask to gently explore these thoughts without being dismissive.", "Using the RRR framework, work through David's 'hot thought' step by step."],
-    system: "You are a dietitian educator providing feedback to a dietitian student on a case study involving cognitive distortions in a type 2 diabetes client. Evaluate their answer against: correct identification of distortions (all-or-nothing/black-white thinking, catastrophising, overgeneralising, discounting the positive), quality of Socratic questioning (open, non-judgmental, exploratory), and application of the RRR framework (accurate recording, evidence-based rationalisation, balanced — not toxic positive — replacement thought). Be specific about what cognitive distortions are present. 4-6 paragraphs."
-  },
-  {
-    id: "cs4",
-    title: "Case study 4: Older adult complexity",
-    tag: "Lifespan — Older adults",
-    tagStyle: { background: "#dbeafe", color: "#1e3a5f" },
-    scenario: "Evelyn is 78, referred by her GP for unintentional weight loss of 5kg over 3 months. She lives alone after her husband passed away 8 months ago. She takes 9 medications. She reports: 'I used to cook for two — now I can't be bothered just for myself. Things don't taste the same. The TV is my company.' Assessment: reduced grip strength, appears mildly dehydrated, poor dentition noted.",
-    questions: ["Categorise the factors affecting Evelyn's nutritional status (physical / social / psychological / physiological / environmental). Be thorough.", "Which factors would you prioritise addressing first, and why? What specific strategies would you recommend?", "How does your counselling approach need to adapt for Evelyn compared to a younger adult client?"],
-    system: "You are a dietitian educator providing feedback to a dietitian student on a complex older adult case study involving unintentional weight loss, social isolation, polypharmacy, taste changes, reduced grip strength (sarcopenia risk), dehydration, and poor dentition. Evaluate their categorisation for completeness (physical: sarcopenia, grip strength, dentition, dehydration; social: isolation, bereavement; psychological: grief, depression risk, loss of motivation; physiological: taste/smell changes, polypharmacy, malabsorption; environmental: cooking for one, practical barriers). Assess prioritisation and strategies (protein intake, social prescription, hydration, dental referral, medication review, flavour enhancement). Comment on person-centred communication approach. 5-6 paragraphs."
-  }
-];
-
-
-
-function ExpandCard({ item, type }) {
-  const [open, setOpen] = useState(false);
-  const isLifespan = type === "lifespan";
-  const content = isLifespan ? item.extra : item.content;
-
-  return (
-    <div style={{ border: `1.5px solid ${item.border}`, borderRadius: 12, background: item.bg, marginBottom: 12, overflow: "hidden", transition: "box-shadow 0.2s" }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left" }}
-      >
-        <div>
-          <span style={{ fontWeight: 500, fontSize: 16, color: "#1a1a1a" }}>{item.label}</span>
-          {item.sub && <span style={{ marginLeft: 10, fontSize: 13, color: "#555" }}>{item.sub}</span>}
-          {item.icon && <span style={{ marginLeft: 10, fontSize: 12, background: item.border, color: "#fff", borderRadius: 6, padding: "2px 8px" }}>{item.icon}</span>}
-        </div>
-        <span style={{ fontSize: 20, color: item.border, fontWeight: 300, marginLeft: 8 }}>{open ? "−" : "+"}</span>
-      </button>
-      {open && (
-        <div style={{ padding: "4px 18px 18px" }}>
-          {isLifespan
-            ? content.map((c, i) => (
-                <div key={i} style={{ marginBottom: 14 }}>
-                  <div style={{ fontWeight: 500, fontSize: 14, color: item.border, marginBottom: 3 }}>{c.heading}</div>
-                  <div style={{ fontSize: 14, color: "#333", lineHeight: 1.65 }}>{c.body}</div>
-                </div>
-              ))
-            : content.map((c, i) => (
-                <div key={i} style={{ marginBottom: 14 }}>
-                  <div style={{ fontWeight: 500, fontSize: 14, color: item.border, marginBottom: 3 }}>{c.h}</div>
-                  <div style={{ fontSize: 14, color: "#333", lineHeight: 1.65 }}>{c.b}</div>
-                </div>
-              ))
-          }
-        </div>
-      )}
-    </div>
-  );
-}
-
-function CaseStudyPanel({ cs }) {
-  const [answers, setAnswers] = useState(["", "", ""]);
-  const [feedback, setFeedback] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async () => {
-    const combined = cs.questions.map((q, i) => `Q${i + 1}: ${q}\n\nStudent answer: ${answers[i] || "(no answer provided)"}`).join("\n\n---\n\n");
-    setLoading(true);
-    setFeedback("");
-    const result = await callClaude(combined, cs.system);
-    setFeedback(result);
-    setLoading(false);
-  };
-
-  return (
-    <div style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 20, marginBottom: 20, background: "#fff" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <span style={{ fontSize: 13, fontWeight: 500, padding: "3px 10px", borderRadius: 6, ...cs.tagStyle }}>{cs.tag}</span>
-        <span style={{ fontWeight: 500, fontSize: 16 }}>{cs.title}</span>
-      </div>
-      <div style={{ background: "#f9fafb", borderRadius: 8, padding: "12px 16px", marginBottom: 16, fontSize: 14, color: "#374151", lineHeight: 1.7, borderLeft: "3px solid #9ca3af" }}>
-        {cs.scenario}
-      </div>
-      {cs.questions.map((q, i) => (
-        <div key={i} style={{ marginBottom: 14 }}>
-          <label style={{ fontSize: 13, fontWeight: 500, color: "#374151", display: "block", marginBottom: 6 }}>Question {i + 1}: {q}</label>
-          <textarea
-            value={answers[i]}
-            onChange={e => { const a = [...answers]; a[i] = e.target.value; setAnswers(a); }}
-            placeholder="Write your answer here..."
-            style={{ width: "100%", minHeight: 90, padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 13, lineHeight: 1.6, resize: "vertical", fontFamily: "inherit", background: "#fafafa", boxSizing: "border-box" }}
-          />
-        </div>
-      ))}
-      <button
-        onClick={handleSubmit}
-        disabled={loading}
-        style={{ background: "#374151", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 14, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, marginTop: 4 }}
-      >
-        {loading ? "Getting feedback..." : "Submit for AI feedback ↗"}
-      </button>
-      {feedback && (
-        <div style={{ marginTop: 16, background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 10, padding: "14px 16px" }}>
-          <div style={{ fontSize: 13, fontWeight: 500, color: "#15803d", marginBottom: 8 }}>Educator feedback</div>
-          <div style={{ fontSize: 14, color: "#1a2e1a", lineHeight: 1.75, whiteSpace: "pre-wrap" }}>{feedback}</div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-
-
-const TABS = ["Lifespan nutrition", "Cognitions & CBT", "Case studies"];
-
-export default function App() {
-  const [tab, setTab] = useState(0);
-
-  const tabColors = ["#2a9d8f", "#7209b7", "#374151"];
-
-  return (
-    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", maxWidth: 820, margin: "0 auto", padding: "20px 16px" }}>
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>DIET7103 — Workshop 8</div>
-        <h1 style={{ fontSize: 24, fontWeight: 500, color: "#111827", margin: "0 0 6px" }}>Lifespan nutrition & cognitive counselling</h1>
-        <p style={{ fontSize: 14, color: "#6b7280", margin: 0 }}>Extended learning materials, case studies & DDR builder</p>
-      </div>
-
-      <div style={{ display: "flex", gap: 6, marginBottom: 24, borderBottom: "1.5px solid #e5e7eb", paddingBottom: 0 }}>
-        {TABS.map((t, i) => (
-          <button
-            key={i}
-            onClick={() => setTab(i)}
-            style={{
-              padding: "8px 16px",
-              fontSize: 14,
-              fontWeight: tab === i ? 500 : 400,
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              color: tab === i ? tabColors[i] : "#6b7280",
-              borderBottom: tab === i ? `2.5px solid ${tabColors[i]}` : "2.5px solid transparent",
-              marginBottom: -1.5,
-              transition: "all 0.15s"
-            }}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-
-      {tab === 0 && (
-        <div>
-          <p style={{ fontSize: 14, color: "#4b5563", marginBottom: 20, lineHeight: 1.7 }}>
-            Expand each life stage for extended clinical notes, evidence-based context, and practical counselling strategies beyond the workshop slides.
-          </p>
-          {LIFESPAN.map(item => <ExpandCard key={item.id} item={item} type="lifespan" />)}
-        </div>
-      )}
-
-      {tab === 1 && (
-        <div>
-          <p style={{ fontSize: 14, color: "#4b5563", marginBottom: 20, lineHeight: 1.7 }}>
-            Expand each topic for deeper coverage of CBT principles and their application in nutrition counselling. These concepts underpin the cognitive work described in the workshop slides.
-          </p>
-          {CBT_CARDS.map(item => <ExpandCard key={item.id} item={item} type="cbt" />)}
-        </div>
-      )}
-
-      {tab === 2 && (
-        <div>
-          <p style={{ fontSize: 14, color: "#4b5563", marginBottom: 20, lineHeight: 1.7 }}>
-            Work through each case study by answering the questions below. Submit your answers to receive detailed AI educator feedback aligned with best practice guidelines.
-          </p>
-          {CASE_STUDIES.map(cs => <CaseStudyPanel key={cs.id} cs={cs} />)}
-        </div>
-      )}
-
-    </div>
-  );
-}
+</script>
+</body>
+</html>
